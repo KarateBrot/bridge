@@ -1,0 +1,34 @@
+# Default sdkconfig for betaflight-host (ESP32-S3)
+# Generated values land in ./sdkconfig; these are the project defaults.
+
+# --- Target ---
+CONFIG_IDF_TARGET="esp32s3"
+
+# --- USB Host (OTG) ---
+# The S3 OTG peripheral acts as USB host to drive the FC's CDC-ACM (VCP).
+CONFIG_USB_HOST_CONTROL_TRANSFER_MAX_SIZE=256
+CONFIG_USB_HOST_HW_BUFFER_BIAS_IN=y
+
+# --- FreeRTOS ---
+CONFIG_FREERTOS_HZ=1000
+
+# --- Main task / app ---
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+
+# --- WiFi ---
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y
+# Bump TX/RX buffers a little so the MSP byte bridge doesn't stall under load.
+CONFIG_ESP_WIFI_STATIC_RX_BUFFER_NUM=16
+CONFIG_ESP_WIFI_DYNAMIC_RX_BUFFER_NUM=32
+CONFIG_ESP_WIFI_DYNAMIC_TX_BUFFER_NUM=32
+
+# --- lwIP ---
+# Disable Nagle so small MSP frames are flushed immediately (low latency).
+CONFIG_LWIP_TCP_MSL=6000
+
+# --- Partitions ---
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# --- Logging ---
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y

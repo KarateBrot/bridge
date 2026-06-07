@@ -1,0 +1,7 @@
+# Managed component dependencies (fetched into ./managed_components by the IDF
+# component manager on first build).
+dependencies:
+  # USB Host CDC-ACM class driver — drives the FC's Virtual COM Port.
+  espressif/usb_host_cdc_acm: "^2.0.0"
+  idf:
+    version: ">=5.0"
