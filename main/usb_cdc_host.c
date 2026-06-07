@@ -10,22 +10,13 @@
 #include "usb/usb_host.h"
 #include "usb/cdc_acm_host.h"
 
+// Candidate VCP USB IDs, generated from the Betaflight build API (the same list
+// Configurator uses). Refresh with: python3 tools/gen_vcp_ids.py
+#include "vcp_ids.generated.h"
+
 static const char *TAG = "usb_cdc";
 
-// Candidate Virtual COM Port USB IDs across the FC MCU families Betaflight
-// targets. We try each in turn; the first that enumerates wins. Extend this list
-// as new vendors appear.
-typedef struct {
-    uint16_t vid;
-    uint16_t pid;
-    const char *name;
-} vcp_id_t;
-
-static const vcp_id_t k_vcp_ids[] = {
-    { 0x0483, 0x5740, "STM32 VCP" },     // ST (and many clones reporting ST IDs)
-    { 0x2E3C, 0x5740, "AT32 VCP" },      // Artery
-    { 0x314B, 0x5740, "APM32 VCP" },     // Geehy
-};
+#define VCP_ID_COUNT   (sizeof(k_vcp_ids) / sizeof(k_vcp_ids[0]))
 
 #define VCP_LINE_CODING_BAUD   115200
 #define USB_RX_TX_TIMEOUT_MS   1000
@@ -111,11 +102,11 @@ static void usb_connect_task(void *arg)
 
     while (1) {
         bool opened = false;
-        for (size_t i = 0; i < sizeof(k_vcp_ids) / sizeof(k_vcp_ids[0]); i++) {
+        for (size_t i = 0; i < VCP_ID_COUNT; i++) {
             esp_err_t err = cdc_acm_host_open(k_vcp_ids[i].vid, k_vcp_ids[i].pid,
                                               0, &dev_cfg, &s_cdc_dev);
             if (err == ESP_OK) {
-                ESP_LOGI(TAG, "opened %s (%04x:%04x)", k_vcp_ids[i].name,
+                ESP_LOGI(TAG, "opened FC VCP (%04x:%04x)",
                          k_vcp_ids[i].vid, k_vcp_ids[i].pid);
                 cdc_acm_line_coding_t coding = {
                     .dwDTERate = VCP_LINE_CODING_BAUD,
