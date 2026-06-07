@@ -27,6 +27,7 @@ It is a transparent byte bridge — no MSP parsing happens on the ESP32.
 | `main/usb_cdc_host.c` | USB host + CDC-ACM; opens the FC VCP, pumps bytes |
 | `main/tcp_server.c` | TCP listener on 5761; one Configurator client at a time |
 | `main/wifi.c` | SoftAP (always) + optional station, creds in NVS |
+| `main/http_status.c` | Status web page on port 80 (USB + TCP state) |
 | `main/bridge.c` | Two stream buffers decoupling the USB and TCP contexts |
 | `esp-idf/` | Pinned ESP-IDF (git submodule, `release/v5.4`, shallow) |
 
@@ -57,6 +58,8 @@ idf.py -p /dev/ttyACM0 flash monitor
 1. Power the board with the FC plugged into the host port.
 2. Join the WiFi network **`betaflight-host`** (default password `betaflight`).
 3. In Configurator choose the **TCP** connection, host `192.168.4.1`, port `5761`.
+
+Browse to `http://192.168.4.1/` for a live status page (USB and TCP state).
 
 To instead join an existing network (station mode), store credentials in NVS
 under namespace `wifi` (keys `ssid` / `pass`) — see `wifi_set_station()` — and

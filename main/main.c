@@ -17,6 +17,7 @@
 #include "wifi.h"
 #include "tcp_server.h"
 #include "usb_cdc_host.h"
+#include "http_status.h"
 
 static const char *TAG = "main";
 
@@ -32,6 +33,7 @@ void app_main(void)
 
     bridge_init();
     wifi_start();
+    http_status_start();
     tcp_server_start();
     usb_cdc_host_start();
 

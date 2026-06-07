@@ -17,6 +17,11 @@ static const char *TAG = "tcp";
 // the TX task; int access is atomic on this platform.
 static volatile int s_client = -1;
 
+bool tcp_server_client_connected(void)
+{
+    return s_client >= 0;
+}
+
 // Drains FC->Configurator bytes from the bridge and writes them to the client.
 static void tcp_tx_task(void *arg)
 {

@@ -5,6 +5,7 @@ idf_component_register(
         "tcp_server.c"
         "usb_cdc_host.c"
         "bridge.c"
+        "http_status.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -14,4 +15,5 @@ idf_component_register(
         nvs_flash
         usb
         lwip
+        esp_http_server
 )

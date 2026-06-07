@@ -23,10 +23,23 @@ static const char *TAG = "usb_cdc";
 
 static cdc_acm_dev_hdl_t s_cdc_dev = NULL;
 static volatile bool s_connected = false;
+static volatile uint16_t s_open_vid;   // VID of the currently open VCP
+static volatile uint16_t s_open_pid;   // PID of the currently open VCP
 static SemaphoreHandle_t s_dev_gone;   // given when the device disconnects
 
 bool usb_cdc_host_is_connected(void)
 {
+    return s_connected;
+}
+
+bool usb_cdc_host_status(uint16_t *vid, uint16_t *pid)
+{
+    if (vid) {
+        *vid = s_open_vid;
+    }
+    if (pid) {
+        *pid = s_open_pid;
+    }
     return s_connected;
 }
 
@@ -117,6 +130,8 @@ static void usb_connect_task(void *arg)
                 cdc_acm_host_line_coding_set(s_cdc_dev, &coding);
                 cdc_acm_host_set_control_line_state(s_cdc_dev, true, true);  // DTR, RTS
                 bridge_reset();
+                s_open_vid = k_vcp_ids[i].vid;
+                s_open_pid = k_vcp_ids[i].pid;
                 s_connected = true;
                 opened = true;
                 break;
