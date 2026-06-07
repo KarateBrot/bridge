@@ -1,5 +1,7 @@
 # betaflight-host
 
+[![build](https://github.com/betaflight/betaflight-host/actions/workflows/build.yml/badge.svg)](https://github.com/betaflight/betaflight-host/actions/workflows/build.yml)
+
 ESP32-S3 USB-host-to-WiFi bridge for Betaflight. The board acts as USB **host**
 to a flight controller's Virtual COM Port (VCP) and exposes that serial stream
 over TCP, so Betaflight Configurator can connect wirelessly from a phone or
@@ -66,3 +68,7 @@ reboot. The SoftAP stays up alongside station mode.
   add new vendors there.
 - Single client at a time — Configurator opens one connection.
 - `TCP_NODELAY` is set and Nagle effectively disabled to keep MSP latency low.
+
+## Licence
+
+GPL-3.0, matching Betaflight. See [LICENSE](LICENSE).
