@@ -26,8 +26,9 @@ It is a transparent byte bridge — no MSP parsing happens on the ESP32.
 | `src/main/main.c` | Startup: NVS, bridge, WiFi, TCP server, USB host |
 | `src/main/usb_cdc_host.c` | USB host + CDC-ACM; opens the FC VCP, pumps bytes |
 | `src/main/tcp_server.c` | TCP listener on 5761; one Configurator client at a time |
-| `src/main/wifi.c` | SoftAP (always) + optional station, creds in NVS |
-| `src/main/http_status.c` | Status web page on port 80 (USB + TCP state) |
+| `src/main/wifi.c` | Station-first WiFi: joins a stored network, SoftAP fallback, creds in NVS |
+| `src/main/http_status.c` | Web UI on port 80: status + scan/join a network + firmware upload |
+| `src/main/ota.c` | `POST /update` OTA handler; streams an uploaded .bin into the spare slot |
 | `src/main/bridge.c` | Two stream buffers decoupling the USB and TCP contexts |
 | `esp-idf/` | Pinned ESP-IDF (git submodule, `release/v5.4`, shallow) |
 
@@ -55,15 +56,40 @@ idf.py -p /dev/ttyACM0 flash monitor
 
 ## Connecting
 
+On first boot — or whenever no network has been configured — the board brings
+up its own SoftAP so you can set it up:
+
 1. Power the board with the FC plugged into the host port.
 2. Join the WiFi network **`betaflight-host`** (default password `betaflight`).
-3. In Configurator choose the **TCP** connection, host `192.168.4.1`, port `5761`.
+   The board runs a DHCP server, so you'll get a `192.168.4.x` lease
+   automatically with `192.168.4.1` as the gateway.
+3. Browse to `http://192.168.4.1/`. The page shows live USB/TCP/WiFi status and
+   lets you **scan for and join your home network**: pick an SSID (or type one),
+   enter the password, and hit *Join*. Credentials are saved to NVS and applied
+   immediately — the status panel shows the assigned IP and netmask.
+4. In Configurator choose the **TCP** connection, host `192.168.4.1`, port
+   `5761` (or the station IP once joined).
 
-Browse to `http://192.168.4.1/` for a live status page (USB and TCP state).
+After a network is stored, **subsequent boots join it directly as a station and
+the SoftAP is not started** — reach the web UI and Configurator at the IP your
+router assigns (shown on the page). If that network is ever unreachable at boot,
+the SoftAP comes back up automatically so you can reconfigure. Use *Forget* on
+the page to clear the stored network and return to AP-only setup mode.
 
-To instead join an existing network (station mode), store credentials in NVS
-under namespace `wifi` (keys `ssid` / `pass`) — see `wifi_set_station()` — and
-reboot. The SoftAP stays up alongside station mode.
+## Updating (OTA)
+
+After the first serial flash, firmware is updated over WiFi — no cable. On the
+web page use **Firmware update**: pick a `build/betaflight-host.bin` and hit
+*Upload & reboot*. The image streams into the spare OTA slot, the boot partition
+is switched, and the board restarts (~10 s); reconnect to the page afterwards.
+
+The layout is dual-OTA (`ota_0`/`ota_1`) with rollback enabled: a freshly
+uploaded image boots in *pending-verify* state and only sticks once it comes up
+healthy (`ota_mark_valid()` in `main.c`). A bad image that fails to boot is
+rolled back to the previous slot automatically.
+
+> The dual-OTA partition table only takes effect from a **serial** flash, so the
+> initial `idf.py flash` below is the last one that needs the cable.
 
 ## Notes
 

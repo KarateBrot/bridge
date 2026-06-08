@@ -1,10 +1,18 @@
-// WiFi bring-up. Always starts a SoftAP so a phone/laptop can connect with no
-// existing network; additionally joins a station network if credentials are
-// stored in NVS (namespace "wifi", keys "ssid"/"pass").
+// WiFi bring-up. Station-first: if credentials are stored and the network is
+// reachable, the device joins it as a pure station and the SoftAP is NOT
+// started. The SoftAP only comes up as a fallback — when no credentials are
+// stored, or the stored network can't be reached at boot — so a phone/laptop
+// can always connect to reach the web UI and (re)configure. The station
+// interface is always enabled so networks can be scanned and joined live from
+// the web page with no reboot. Credentials persist in NVS (namespace "wifi",
+// keys "ssid"/"pass") and are re-applied on boot.
 #pragma once
 
-// Default SoftAP identity. Override at build time with -D, or store station
-// credentials in NVS to also join an existing network.
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+// Default SoftAP identity. Override at build time with -D.
 #ifndef WIFI_AP_SSID
 #define WIFI_AP_SSID   "betaflight-host"
 #endif
@@ -15,10 +23,50 @@
 #define WIFI_AP_CHANNEL 6
 #endif
 
-// Bring up netif/event loop and start AP (+STA if NVS creds present). Blocks
-// only briefly; association happens asynchronously.
+// SoftAP address; also the DHCP gateway/DNS handed to clients.
+#ifndef WIFI_AP_IP
+#define WIFI_AP_IP     "192.168.4.1"
+#endif
+
+// Station connection lifecycle, surfaced to the web UI.
+typedef enum {
+    WIFI_STA_IDLE = 0,    // no credentials configured
+    WIFI_STA_CONNECTING,  // associating / waiting for an IP
+    WIFI_STA_CONNECTED,   // associated and has an IP
+    WIFI_STA_FAILED,      // gave up after retries
+} wifi_sta_state_t;
+
+typedef struct {
+    wifi_sta_state_t state;
+    bool ap_active;       // true if the fallback SoftAP is currently broadcasting
+    char ssid[33];        // configured target SSID ("" if none)
+    char ip[16];          // assigned IPv4 ("" unless connected)
+    char gw[16];          // gateway ("" unless connected)
+    char netmask[16];     // netmask ("" unless connected)
+} wifi_status_t;
+
+// One visible access point from a scan.
+typedef struct {
+    char    ssid[33];
+    int8_t  rssi;         // dBm
+    bool    secure;       // true unless the network is open
+} wifi_scan_ap_t;
+
+// Bring up netif/event loop and WiFi. If a network is stored, join it as a
+// station (no AP); otherwise start the SoftAP + DHCP server for setup. The AP
+// is also raised as a fallback if a stored network can't be reached at boot.
+// Association happens asynchronously.
 void wifi_start(void);
 
-// Store station credentials in NVS and (re)connect as STA. Pass NULL/empty ssid
-// to clear stored creds and run AP-only.
+// Save station credentials to NVS and apply them live (no reboot): connects as
+// STA, keeping the AP up if it is currently broadcasting. Pass NULL/empty ssid
+// to clear creds, disconnect, and fall back to the setup AP.
 void wifi_set_station(const char *ssid, const char *pass);
+
+// Snapshot the current station state for display.
+void wifi_sta_status(wifi_status_t *out);
+
+// Blocking scan for nearby networks. Fills up to max entries (deduped by SSID,
+// strongest first) and returns the count. Safe to call while the AP is serving
+// clients; the scan briefly hops channels.
+int wifi_scan(wifi_scan_ap_t *out, int max);

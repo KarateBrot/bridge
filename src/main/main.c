@@ -18,6 +18,7 @@
 #include "tcp_server.h"
 #include "usb_cdc_host.h"
 #include "http_status.h"
+#include "ota.h"
 
 static const char *TAG = "main";
 
@@ -36,6 +37,10 @@ void app_main(void)
     http_status_start();
     tcp_server_start();
     usb_cdc_host_start();
+
+    // Everything came up: if we just booted a freshly-OTA'd image, confirm it
+    // so the bootloader keeps it instead of rolling back on the next reset.
+    ota_mark_valid();
 
     ESP_LOGI(TAG, "betaflight-host ready");
 }

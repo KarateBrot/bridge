@@ -6,6 +6,7 @@ idf_component_register(
         "usb_cdc_host.c"
         "bridge.c"
         "http_status.c"
+        "ota.c"
     INCLUDE_DIRS
         "."
     REQUIRES
@@ -16,4 +17,5 @@ idf_component_register(
         usb
         lwip
         esp_http_server
+        app_update
 )
