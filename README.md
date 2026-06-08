@@ -37,17 +37,73 @@ It is a transparent byte bridge — no MSP parsing happens on the ESP32.
 
 The board is selected at configure time with `-DBOARD=<name>`, where `<name>` is
 a directory under `boards/`. Each board provides its own `sdkconfig.defaults`
-(flash size, PSRAM, partition CSV) and `board.h`, layered on the shared
-top-level `sdkconfig.defaults`. The USB-host pins (D- GPIO19 / D+ GPIO20) are
-fixed on the ESP32-S3 and identical across boards.
+(flash size, PSRAM, partition CSV) and `board.h` (identity, LED pins), layered
+on the shared top-level `sdkconfig.defaults`. The USB-host pins
+(D- GPIO19 / D+ GPIO20) are fixed on the ESP32-S3 and identical across boards.
 
-| BOARD | Hardware |
-|-------|----------|
-| `esp32s3-zero` (default) | Waveshare ESP32-S3-ZERO — 4 MB flash, no PSRAM, single USB-C (native, shared with USB-host) |
-| `esp32s3-wroom-freenove` | Freenove ESP32-S3-WROOM N8R8 — 8 MB flash, 8 MB octal PSRAM, dual USB-C (native + CH343 UART, so the console survives USB-host mode) |
+| BOARD | Flash | PSRAM | USB | Status LEDs |
+|-------|-------|-------|-----|-------------|
+| `esp32s3-zero` (default) | 4 MB | — | single (native) | NeoPixel (GPIO21) |
+| `esp32s3-wroom-freenove` | 8 MB | 8 MB octal | dual (native + UART) | WiFi LED (GPIO2) + NeoPixel (GPIO48) |
 
-A board identity is baked into the firmware (`esp_app_desc.version`) and checked
-on OTA, so an image built for one board is refused on another (see below).
+A board identity (`BOARD_NAME`) is baked into each image (`esp_app_desc.version`)
+and checked on OTA, so an image built for one board is refused on another (see
+[Updating](#updating-ota)).
+
+### `esp32s3-zero` — Waveshare ESP32-S3-ZERO
+
+- **MCU / memory:** ESP32-S3, 4 MB flash, no PSRAM.
+- **USB:** one USB-C, wired to the native ESP32-S3 USB (D- GPIO19 / D+ GPIO20).
+  That single port is shared between flashing/console (USB-Serial-JTAG) and the
+  USB-host bridge — so **the serial console drops out once host mode engages**.
+  Re-flash over the air (OTA) or force download mode (hold BOOT while resetting).
+- **LED:** the on-board WS2812 NeoPixel (GPIO21) indicates FC/OTG comms. There is
+  no separate WiFi LED on this board.
+- **Partitions:** 4 MB dual-OTA, ~1.875 MB per slot
+  (`boards/esp32s3-zero/partitions.csv`).
+
+### `esp32s3-wroom-freenove` — Freenove ESP32-S3-WROOM (N8R8, v1.1)
+
+- **MCU / memory:** ESP32-S3-WROOM-1 N8R8 — 8 MB flash, 8 MB **octal** PSRAM
+  (`CONFIG_SPIRAM` enabled).
+- **USB:** two USB-C ports. One is the native ESP32-S3 USB (D- GPIO19 /
+  D+ GPIO20) used for the USB-host bridge; the other goes through a **WCH CH343**
+  UART bridge (USB `1a86:55d3`, enumerates as `/dev/ttyACM*`) on UART0
+  (TX GPIO43 / RX GPIO44). Flash and monitor over the CH343 port — **the console
+  stays up even while the native port is in host mode**.
+- **LEDs (v1.1):**
+  - **GPIO2** — plain LED, WiFi state (blink cadence). Assumed active-high;
+    uncomment `BOARD_WIFI_LED_ACTIVE_LOW` in the board's `board.h` to invert.
+  - **GPIO48** — on-board WS2812 NeoPixel, FC/OTG comms.
+- **Partitions:** 8 MB dual-OTA, ~3 MB per slot
+  (`boards/esp32s3-wroom-freenove/partitions.csv`).
+
+### Status LED behaviour
+
+| LED | State | Meaning |
+|-----|-------|---------|
+| WiFi LED (GPIO, if present) | solid | joined a network as a station |
+| | fast blink (~5 Hz) | associating |
+| | slow blink (~1 Hz) | SoftAP setup mode / idle |
+| NeoPixel (WS2812) | dim red | no FC attached |
+| | amber | FC VCP open, idle |
+| | green | FC + Configurator (TCP) linked |
+| | blue flash | bytes flowing to/from the FC |
+
+### Adding a board
+
+Create `boards/<name>/` with three files:
+
+- `sdkconfig.defaults` — set `CONFIG_ESPTOOLPY_FLASHSIZE*`,
+  `CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="boards/<name>/partitions.csv"`, any
+  PSRAM options, and the identity
+  (`CONFIG_APP_PROJECT_VER_FROM_CONFIG=y` + `CONFIG_APP_PROJECT_VER="<name>"`).
+- `partitions.csv` — a dual-OTA table sized for the board's flash.
+- `board.h` — `BOARD_NAME` and any LED pins (`BOARD_WIFI_LED_GPIO`,
+  `BOARD_RGB_LED_GPIO`); a board may define neither LED.
+
+Then build with `idf.py -DBOARD=<name> build` (delete `./sdkconfig` first when
+switching boards so it regenerates from the new defaults).
 
 ## Setup
 
