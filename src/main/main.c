@@ -1,4 +1,4 @@
-// betaflight-host: ESP32-S3 USB-host-to-WiFi bridge.
+// betaflight-bridge: ESP32-S3 USB-host-to-WiFi bridge.
 //
 // Acts as USB host to a Betaflight flight controller's Virtual COM Port (VCP)
 // and exposes that serial stream over TCP, so Betaflight Configurator (TCP
@@ -44,5 +44,5 @@ void app_main(void)
     // so the bootloader keeps it instead of rolling back on the next reset.
     ota_mark_valid();
 
-    ESP_LOGI(TAG, "betaflight-host ready");
+    ESP_LOGI(TAG, "betaflight-bridge ready");
 }

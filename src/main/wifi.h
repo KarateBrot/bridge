@@ -14,7 +14,7 @@
 
 // Default SoftAP identity. Override at build time with -D.
 #ifndef WIFI_AP_SSID
-#define WIFI_AP_SSID   "betaflight-host"
+#define WIFI_AP_SSID   "betaflight-bridge"
 #endif
 #ifndef WIFI_AP_PASS
 #define WIFI_AP_PASS   "betaflight"   // >= 8 chars for WPA2; empty => open AP

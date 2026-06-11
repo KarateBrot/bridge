@@ -1,6 +1,6 @@
-# betaflight-host
+# betaflight-bridge
 
-[![build](https://github.com/betaflight/betaflight-host/actions/workflows/build.yml/badge.svg)](https://github.com/betaflight/betaflight-host/actions/workflows/build.yml)
+[![build](https://github.com/betaflight/bridge/actions/workflows/build.yml/badge.svg)](https://github.com/betaflight/bridge/actions/workflows/build.yml)
 
 ESP32-S3 USB-host-to-WiFi bridge for Betaflight. The board acts as USB **host**
 to a flight controller's Virtual COM Port (VCP) and exposes that serial stream
@@ -140,7 +140,7 @@ On first boot — or whenever no network has been configured — the board bring
 up its own SoftAP so you can set it up:
 
 1. Power the board with the FC plugged into the host port.
-2. Join the WiFi network **`betaflight-host`** (default password `betaflight`).
+2. Join the WiFi network **`betaflight-bridge`** (default password `betaflight`).
    The board runs a DHCP server, so you'll get a `192.168.4.x` lease
    automatically with `192.168.4.1` as the gateway.
 3. Browse to `http://192.168.4.1/`. The page shows live USB/TCP/WiFi status and

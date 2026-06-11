@@ -1,4 +1,4 @@
-# Default sdkconfig for betaflight-host (ESP32-S3)
+# Default sdkconfig for betaflight-bridge (ESP32-S3)
 # Generated values land in ./sdkconfig; these are the project defaults.
 
 # --- Target ---
