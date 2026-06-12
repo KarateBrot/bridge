@@ -1,4 +1,4 @@
-# betaflight-bridge
+# Betaflight - USB to Wifi - Bridge
 
 [![build](https://github.com/betaflight/bridge/actions/workflows/build.yml/badge.svg)](https://github.com/betaflight/bridge/actions/workflows/build.yml)
 
