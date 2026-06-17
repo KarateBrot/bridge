@@ -102,8 +102,8 @@ Create `boards/<name>/` with three files:
 - `board.h` — `BOARD_NAME` and any LED pins (`BOARD_WIFI_LED_GPIO`,
   `BOARD_RGB_LED_GPIO`); a board may define neither LED.
 
-Then build with `idf.py -DBOARD=<name> build` (delete `./sdkconfig` first when
-switching boards so it regenerates from the new defaults).
+Then build with `make <name>` — it is picked up automatically (the board list is
+read from `boards/`) and reconfigures cleanly when you switch boards.
 
 ## Setup
 
@@ -121,13 +121,25 @@ git submodule update --init --depth 1 esp-idf
 
 ## Build & flash
 
-```sh
-idf.py set-target esp32s3
+A `make` wrapper around `idf.py` handles board selection, reconfigures
+automatically when you switch boards, and writes a per-board image to `dist/`.
+It sources the vendored ESP-IDF (`./esp-idf/export.sh`) for you, so a plain
+`make <board>` works straight after `install.sh`.
 
-# Build for a board (default is esp32s3-zero). When switching boards, delete
-# ./sdkconfig first so it regenerates from that board's defaults.
-idf.py -DBOARD=esp32s3-wroom-freenove build
-idf.py -p /dev/ttyACM0 flash monitor
+```sh
+make                        # list the available boards (read from boards/)
+make esp32s3-wroom-freenove # build the image for a board
+make clean                  # remove build/, dist/ and sdkconfig
+```
+
+Each build writes `dist/betaflight-bridge-<board>.bin` — the image used for both
+serial flashing and OTA. Switching boards triggers a clean reconfigure, so you
+don't need to delete `sdkconfig` by hand.
+
+To flash and monitor over serial, use `idf.py` directly:
+
+```sh
+idf.py -DBOARD=esp32s3-wroom-freenove -p /dev/ttyACM0 flash monitor
 ```
 
 On the dual-USB Freenove, flash/monitor over the CH343 UART port — it stays
@@ -159,8 +171,8 @@ the page to clear the stored network and return to AP-only setup mode.
 ## Updating (OTA)
 
 After the first serial flash, firmware is updated over WiFi — no cable. On the
-web page use **Firmware update**: pick a `build/betaflight-host.bin` and hit
-*Upload & reboot*. The image streams into the spare OTA slot, the boot partition
+web page use **Firmware update**: pick the `dist/betaflight-bridge-<board>.bin`
+built for this board and hit *Upload & reboot*. The image streams into the spare OTA slot, the boot partition
 is switched, and the board restarts (~10 s); reconnect to the page afterwards.
 
 The layout is dual-OTA (`ota_0`/`ota_1`) with rollback enabled: a freshly
@@ -175,7 +187,7 @@ and the boot partition is left untouched. The running board and slot are shown
 on the status page.
 
 > The dual-OTA partition table only takes effect from a **serial** flash, so the
-> initial `idf.py flash` below is the last one that needs the cable.
+> initial `idf.py ... flash` is the last one that needs the cable.
 
 ## Notes
 
