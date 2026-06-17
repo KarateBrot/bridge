@@ -114,10 +114,14 @@ ESP-IDF is vendored as a submodule. After cloning this repo:
 # venv + pip to build its Python environment.
 sudo apt install git wget cmake ninja-build python3-venv python3-pip
 
-git submodule update --init --depth 1 esp-idf
-./esp-idf/install.sh esp32s3
-. ./esp-idf/export.sh
+# Fetch the pinned ESP-IDF submodule and install its toolchain.
+make esp_tools
 ```
+
+`make esp_tools` is idempotent — re-run it to pull toolchain updates. `make`
+sources the vendored ESP-IDF automatically, so you don't need to
+`. ./esp-idf/export.sh` for a build (do that only when calling `idf.py`
+directly, e.g. to flash over serial).
 
 ## Build & flash
 

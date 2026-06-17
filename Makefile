@@ -1,13 +1,17 @@
 # betaflight-bridge — convenience wrapper around ESP-IDF's idf.py.
 #
 #   make                 show this help (the board list is read from boards/)
+#   make esp_tools       fetch the ESP-IDF submodule and install the toolchain
 #   make <board>         build the flash/OTA image for <board>
 #   make clean           remove build artefacts
 #
 # It sources the vendored ESP-IDF (./esp-idf/export.sh) automatically if idf.py
-# is not already on PATH, so a plain `make <board>` works after install.sh.
+# is not already on PATH, so a plain `make <board>` works after `make esp_tools`.
 
 SHELL := /bin/bash
+
+# The Espressif chip target everything is built for.
+IDF_TARGET := esp32s3
 
 # CMake project() name: the build artefact is build/$(PROJECT).bin and the
 # published per-board image is dist/$(PROJECT)-<board>.bin.
@@ -25,12 +29,13 @@ DEFAULT_BOARD := $(shell grep 'BOARD "' CMakeLists.txt | head -1 | cut -d'"' -f2
 LAST_BOARD := build/.last_board
 
 .DEFAULT_GOAL := help
-.PHONY: help list clean $(BOARDS)
+.PHONY: help list esp_tools clean $(BOARDS)
 
 help:
 	@echo "betaflight-bridge — ESP32-S3 USB-host-to-WiFi bridge"
 	@echo ""
 	@echo "Usage:"
+	@echo "  make esp_tools build/update the ESP-IDF submodule and toolchain"
 	@echo "  make <board>   build the flash/OTA image for <board>"
 	@echo "  make clean     remove build artefacts"
 	@echo "  make help      show this message"
@@ -50,14 +55,29 @@ help:
 list:
 	@for b in $(BOARDS); do echo "$$b"; done
 
+# One-time setup: fetch the pinned ESP-IDF submodule and install its toolchain.
+# Re-running it is safe — the submodule is fast-forwarded and install.sh is
+# idempotent. The toolchain install needs git, wget, cmake, ninja and a working
+# python3 venv on PATH (Debian/Ubuntu: apt install git wget cmake ninja-build
+# python3-venv python3-pip).
+esp_tools:
+	@set -e; \
+	if [ ! -f esp-idf/install.sh ]; then \
+	  echo "==> Fetching ESP-IDF submodule"; \
+	  git submodule update --init --depth 1 esp-idf; \
+	fi; \
+	echo "==> Installing the ESP-IDF $(IDF_TARGET) toolchain"; \
+	./esp-idf/install.sh $(IDF_TARGET); \
+	echo ""; \
+	echo "==> ESP-IDF ready. Build with: make <board>"
+
 $(BOARDS):
 	@echo "==> Building $(PROJECT) for board: $@"
 	@set -e; \
 	if ! command -v idf.py >/dev/null 2>&1; then \
 	  if [ ! -f esp-idf/export.sh ]; then \
-	    echo "ESP-IDF not found. First-time setup:"; \
-	    echo "  git submodule update --init --depth 1 esp-idf"; \
-	    echo "  ./esp-idf/install.sh esp32s3"; \
+	    echo "ESP-IDF not found. Run first-time setup:"; \
+	    echo "  make esp_tools"; \
 	    exit 1; \
 	  fi; \
 	  . ./esp-idf/export.sh >/dev/null; \
@@ -66,7 +86,7 @@ $(BOARDS):
 	  echo "==> Board changed (or first build); reconfiguring"; \
 	  rm -f sdkconfig; \
 	  idf.py fullclean >/dev/null 2>&1 || true; \
-	  idf.py -DBOARD=$@ set-target esp32s3; \
+	  idf.py -DBOARD=$@ set-target $(IDF_TARGET); \
 	fi; \
 	idf.py -DBOARD=$@ build; \
 	mkdir -p dist; \
